@@ -128,8 +128,11 @@ def main():
             print(f"Pack '{parse.update}' does not exist")
             return
         
+        options = opts.OptDrawer()
+        opt = options.get_opt("browser")
+
         for item in pack.items:
-            command = f"gallery-dl --cookies-from-browser firefox -D {item.folder} {item.link}"
+            command = f"gallery-dl --cookies-from-browser {opt.value} -D {item.folder} {item.link}"
             print(f"Running command: {command}")
             os.system(command)
     
