@@ -45,7 +45,6 @@ class Pack:
         for i in data:
             self.items.append(Item( i["name"], i["folder"], i["link"] ))
     
-    
     # ADD ITEM
     def add_item(self, name:str, folder:str, link:str) -> None:
         self.items.append(Item(name, folder, link))

@@ -160,8 +160,8 @@ def main():
         folder = parse.folder
         link = parse.link
 
-        if not folder: item.folder = None
-        if not link: item.link = None
+        if not folder: folder = None
+        if not link:   link   = None
 
         vt.add_row(["New", folder, link])
 
