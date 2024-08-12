@@ -18,3 +18,9 @@ def get_fold(path:str) -> str:
 
 def get_data_location() -> str:
     return os.path.join(root, fold_base[0])
+
+def count_files(path:str):
+    result = 0
+    for root, dirs, files in os.walk(path):
+        result += len(files)
+    return result

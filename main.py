@@ -5,6 +5,7 @@ import classes as clas
 import helper as hlp
 import folders as folds
 import options as opts
+import colors as color
 
 def main():
     folds.prep_folds()
@@ -123,6 +124,7 @@ def main():
     # UPDATE DIR
     if parse.update:
 
+
         pack = clas.Pack(parse.update)
         if not os.path.exists(pack.path):
             print(f"Pack '{parse.update}' does not exist")
@@ -130,11 +132,26 @@ def main():
         
         options = opts.OptDrawer()
         opt = options.get_opt("browser")
-
+        
+        total_added = 0
+        item_counts = []
         for item in pack.items:
+
+            start_count = folds.count_files(item.folder)
+
             command = f"gallery-dl --cookies-from-browser {opt.value} -D {item.folder} {item.link}"
-            print(f"Running command: {command}")
+            print(f"Running command: {color.blue(command)}")
             os.system(command)
+
+            added = folds.count_files(item.folder) - start_count
+            item_counts.append([item.name, added])
+            total_added += added
+        
+        print()
+        vt = hlp.VisualTable(["Name", "Added Count"], 3)
+        vt.values = item_counts
+        print(vt)
+        print(color.blue(f"\nTotal : {total_added}"))
     
     # EDIT ITEM
     if parse.edit:
