@@ -1,3 +1,5 @@
+import config
+
 def are_you_sure(msg:str=None) -> bool:
     if msg: text = msg + " (y/n) "
     else:   text = "Are you sure? (y/n)"
@@ -12,4 +14,5 @@ def find_item(name:str, data:list[dict]) -> dict:
             return item
 
 def get_item_cmd(item:dict):
-    return f'gallery-dl --cookies-from-browser firefox -D "{item["folder"]}" {item["link"]}'
+    browser = config.quick_value("browser")
+    return f'gallery-dl --cookies-from-browser {browser} -D "{item["folder"]}" {item["link"]}'

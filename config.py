@@ -40,3 +40,8 @@ def value_allowed(name:str, value:str) -> bool:
     if "allowed" not in default: return True
     if value in default["allowed"]: return True
     return False
+
+def quick_value(name:str) -> str:
+    config = get_config()
+    value  = find_value(name, config)
+    if value: return value["value"]
