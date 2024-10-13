@@ -2,13 +2,15 @@
 import os
 import rich
 import rich.table
+import json
 
 # Stagings
-import pars
 import color
-import json
+import config
 import fold
+import pars
 import stage
+import vhold
 
 # CONTROL
 parse = pars.get_parse().parse_args()
@@ -20,12 +22,12 @@ if parse.update:
     # Get name
     name = parse.name
     if not name: name = input(" Item Name > ")
-    if not name: print(color.red("You must specify item name")); quit()
+    if not name: color.fast_error("You must specify item name")
 
     # Get
     data = fold.get_items()
     item = stage.find_item(name, data)
-    if not item: print(color.red(f"Item '{name}' does not exist")); quit()
+    if not item: color.fast_error(f"Item '{name}' does not exist")
 
     # Update
     cmd = stage.get_item_cmd(item)
@@ -33,6 +35,10 @@ if parse.update:
     os.system(cmd)
     print(color.green("Done!"))
     quit()
+
+
+
+# ----- [ I T E M S ] -----
 
 # --- New Item
 if parse.new_item:
@@ -47,16 +53,16 @@ if parse.new_item:
 
     # Fill Missing
     error_block = False
-    if not name:   print(color.red("Name cannot be empty"));   error_block = True
-    if not folder: print(color.red("Folder cannot be empty")); error_block = True
-    if not link:   print(color.red("Link cannot be empty"));   error_block = True
-    elif not link.startswith("https://"): print(color.red("Link must be URL")); error_block = True
+    if not name:   color.fast_error("Name cannot be empty");   error_block = True
+    if not folder: color.fast_error("Folder cannot be empty"); error_block = True
+    if not link:   color.fast_error("Link cannot be empty");   error_block = True
+    elif not link.startswith("https://"): color.fast_error("Link must be URL"); error_block = True
     if error_block: quit()
 
     # Prepare data dict
     data = fold.get_items()
     if stage.find_item(name, data):
-        print(f"Item '{name}' already exists"); quit()
+        color.fast_error(f"Item '{name}' already exists")
     
     # Add to list and save
     data.append({
@@ -72,14 +78,10 @@ if parse.new_item:
 # --- List Items
 if parse.list_items:
 
-    # Get Items
-    json_path = fold.get_path("items.json")
-    if os.path.exists(json_path): data :list[dict] = json.load(open(json_path, "r"))
-    else:                         data :list[dict] = []
-
-    # If not items
+    # Data
+    data = fold.get_items()
     if len(data) == 0:
-        print(color.red("List is empty")); quit()
+        color.fast_error("List is empty"); quit()
 
     # Display
     table = rich.table.Table()
@@ -98,16 +100,16 @@ if parse.del_item:
 
     name = parse.name
     if not name: name = input(" Item Name > ")
-    if not name: print(color.red("You must specify item name")); quit()
+    if not name: color.fast_error("You must specify item name")
     
     # Get
     data = fold.get_items()
     item = stage.find_item(name, data)
-    if not item: print(color.red(f"Item '{name}' does not exist")); quit()
+    if not item: color.fast_error(f"Item '{name}' does not exist")
 
     # Final
     if not stage.are_you_sure():
-        print(color.red("Deletion cancelled")); quit()
+        color.fast_error("Deletion cancelled")
 
     data.remove(item)
     fold.set_items(data)
@@ -122,7 +124,7 @@ if parse.edit_item:
     name = parse.edit_item
     data = fold.get_items()
     item = stage.find_item(name, data)
-    if not item: print(color.red("Item does not exist")); quit()
+    if not item: color.fast_error("Item does not exist")
 
     # Prep
     new_name   = parse.name
@@ -138,7 +140,7 @@ if parse.edit_item:
 
         # If still empty
         if (not new_name and not new_folder and not new_link):
-            print(color.red("Nothing changed")); quit()
+            color.fast_error("Nothing changed")
     
     # Change values
     if new_name:   item["name"]   = new_name
@@ -148,4 +150,64 @@ if parse.edit_item:
     # Final
     fold.set_items(data)
     print(color.green("Item has been edited"))
+    quit()
+
+
+
+# ----- [ C O N F I G ] -----
+
+# --- List Config
+if parse.list_config:
+
+    # Get config
+    con = config.get_config()
+
+    # Table collumns
+    table = rich.table.Table()
+    table.add_column("Name",  style="blue")
+    table.add_column("Value", style="green")
+
+    # Table rows
+    for c in con:
+        allowed = config.find_value(c["name"], vhold.DEFAULT_CONFIG).get("allowed", None)
+        if allowed:
+
+            values = []
+            for av in allowed:
+                if av == c["value"]: values.append(av)
+                else:                values.append(f"[red]{av}[/red]")
+            
+            table.add_row(c["name"], " ".join(values))
+        
+        else:
+            table.add_row(c["name"], c["value"])
+
+    # Display
+    rich.print(table)
+    quit()
+
+# --- Set value
+if parse.set_config:
+
+    # Get config
+    name = parse.name
+    if not name: name = input(" Name  > ")
+    if not name: color.fast_error("You must specify setting name")
+
+    # Get config
+    con = config.get_config()
+    setting = config.find_value(name, con)
+    if not setting: color.fast_error("Setting doesn't exist")
+
+    # Value
+    value = parse.value
+    if not value: value = input(" Value > ")
+    if not value: color.fast_error("You must specify new value")
+    if not config.value_allowed(name, value):
+        color.fast_error(f"Value '{value}' is not accepted by setting '{name}'")
+
+    # Modify
+    setting["value"] = value
+    config.set_config(con)
+    print(color.green(f"Setting '{name}' has been changed to '{value}'"))
     quit()
