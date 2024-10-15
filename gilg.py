@@ -2,12 +2,13 @@
 import os
 import rich
 import rich.table
-import json
+import sys
 
 # Stagings
 import color
 import config
 import fold
+import groups
 import pars
 import stage
 import vhold
@@ -19,22 +20,37 @@ fold.prepare()
 # --- Update
 if parse.update:
 
-    # Get name
-    name = parse.name
-    if not name: name = input(" Item Name > ")
-    if not name: color.fast_error("You must specify item name")
+    # Single item
+    if parse.name:
+        name = parse.name
 
-    # Get
-    data = fold.get_items()
-    item = stage.find_item(name, data)
-    if not item: color.fast_error(f"Item '{name}' does not exist")
+        # Get
+        data = fold.get_items()
+        item = stage.find_item(name, data)
+        if not item: color.fast_error(f"Item '{name}' does not exist")
 
-    # Update
-    cmd = stage.get_item_cmd(item)
-    print(f"Running : {color.blue(cmd)}")
-    os.system(cmd)
+        # Update
+        cmd = stage.get_item_cmd(item)
+        print(f"\n\nRunning : {color.blue(cmd)}\n")
+        os.system(cmd)
+    
+    # Whole group
+    elif parse.group:
+        name  = parse.group
+        grp   = groups.get_group(name)
+        items = groups.get_group_items(grp)
+
+        for i in items:
+            cmd = stage.get_item_cmd(i)
+            print(f"\n\nItem    : {color.green(i['name'])}")
+            print(    f"Running : {color.blue(cmd)}\n")
+            os.system(cmd)
+    
+    # None
+    else: color.fast_error("You must specify item --name or --group")
+        
     print(color.green("Done!"))
-    quit()
+    sys.exit()
 
 
 
@@ -57,7 +73,7 @@ if parse.new_item:
     if not folder: color.fast_error("Folder cannot be empty"); error_block = True
     if not link:   color.fast_error("Link cannot be empty");   error_block = True
     elif not link.startswith("https://"): color.fast_error("Link must be URL"); error_block = True
-    if error_block: quit()
+    if error_block: sys.exit()
 
     # Prepare data dict
     data = fold.get_items()
@@ -73,7 +89,7 @@ if parse.new_item:
 
     fold.set_items(data)
     print(color.green("Item has been created successfully"))
-    quit()
+    sys.exit()
 
 # --- List Items
 if parse.list_items:
@@ -81,19 +97,32 @@ if parse.list_items:
     # Data
     data = fold.get_items()
     if len(data) == 0:
-        color.fast_error("List is empty"); quit()
+        color.fast_error("Item list is empty"); sys.exit()
 
     # Display
-    table = rich.table.Table()
-    table.add_column("Name",   style="green")
-    table.add_column("Folder", style="yellow")
-    table.add_column("Name",   style="cyan")
+    if parse.group:
+        grp = groups.get_group(parse.group)
+        if not grp: color.fast_error(f"Group '{parse.group}' does not exist")
 
-    for i in data:
-        table.add_row(i["name"], i["folder"], i["link"])
+        table = rich.table.Table(title=f"Group '{parse.group}' Items")
+        table.add_column("Name",   style="green")
+        table.add_column("Folder", style="yellow")
+        table.add_column("Link",   style="cyan")
+
+        for item in groups.get_group_items(grp):
+            table.add_row(item["name"], item["folder"], item["link"])
+
+    else:
+        table = rich.table.Table(title="Items")
+        table.add_column("Name",   style="green")
+        table.add_column("Folder", style="yellow")
+        table.add_column("Link",   style="cyan")
+
+        for i in data:
+            table.add_row(i["name"], i["folder"], i["link"])
     
     rich.print(table)
-    quit()
+    sys.exit()
 
 # --- Delete Item
 if parse.del_item:
@@ -115,7 +144,7 @@ if parse.del_item:
     fold.set_items(data)
     print(color.green("Items has been deleted"))
 
-    quit()
+    sys.exit()
 
 # --- Edit Item
 if parse.edit_item:
@@ -150,7 +179,7 @@ if parse.edit_item:
     # Final
     fold.set_items(data)
     print(color.green("Item has been edited"))
-    quit()
+    sys.exit()
 
 
 
@@ -163,7 +192,7 @@ if parse.list_config:
     con = config.get_config()
 
     # Table collumns
-    table = rich.table.Table()
+    table = rich.table.Table(title="Config")
     table.add_column("Name",  style="blue")
     table.add_column("Value", style="green")
 
@@ -184,7 +213,7 @@ if parse.list_config:
 
     # Display
     rich.print(table)
-    quit()
+    sys.exit()
 
 # --- Set value
 if parse.set_config:
@@ -210,4 +239,98 @@ if parse.set_config:
     setting["value"] = value
     config.set_config(con)
     print(color.green(f"Setting '{name}' has been changed to '{value}'"))
-    quit()
+    sys.exit()
+
+
+
+# ----- [ G R O U P S ] -----
+
+# --- List Groups
+if parse.list_groups:
+
+    gps = groups.get_list()
+    if len(gps)==0: color.fast_error("Group list is empty")
+
+    table = rich.table.Table(title="Groups")
+    table.add_column("Name",  style="blue")
+    table.add_column("Items", style="yellow")
+    
+    lines :list[str] = []
+    for g_name in gps:
+        grp = groups.get_group(g_name)
+        item_count = len(grp)
+
+        table.add_row(g_name, str(item_count))
+    
+    rich.print(table)
+
+
+# --- Put Item
+if parse.put_item:
+    
+    # Group name
+    g_name = parse.group
+    if not g_name: g_name = input(" Group Name > ")
+    if not g_name: color.fast_error("You must specify --group.")
+    grp = groups.get_group(g_name)
+    if not grp: grp = []
+    
+    # Item name
+    i_name = parse.name
+    if not i_name: i_name = input(" Item Name  > ")
+    if not i_name: color.fast_error("You must specify --name")
+
+    # Get data
+    data = fold.get_items()
+    item = stage.find_item(i_name, data)
+    if not item: color.fast_error(f"Item '{i_name}' does not exist")
+    if i_name in grp: color.fast_error(f"Item '{i_name}' is already in group '{g_name}'")
+
+    # Finally
+    grp.append(i_name)
+    groups.set_group(g_name, grp)
+    print(color.green(f"Item '{i_name}' has been added to group '{g_name}'"))
+    sys.exit()
+
+
+# --- Take Item
+if parse.take_item:
+    
+    # Group name
+    g_name = parse.group
+    if not g_name: g_name = input(" Group Name > ")
+    if not g_name: color.fast_error("You must specify --group.")
+    grp = groups.get_group(g_name)
+    if not grp: grp = []
+    
+    # Item name
+    i_name = parse.name
+    if not i_name: i_name = input(" Item Name  > ")
+    if not i_name: color.fast_error("You must specify --name")
+
+    # Get data
+    data = fold.get_items()
+    item = stage.find_item(i_name, data)
+    if not item: color.fast_error(f"Item '{i_name}' does not exist")
+    if i_name not in grp: color.fast_error(f"Item '{i_name}' is not in group '{g_name}'")
+
+    # Finally
+    grp.remove(i_name)
+    if len(grp)>0: groups.set_group(g_name, grp)
+    else:          groups.rem_group(g_name)
+    print(color.green(f"Item '{i_name}' has been taken from group '{g_name}'"))
+    sys.exit()
+
+# --- Clear Group
+if parse.clear_group:
+
+    g_name = parse.group
+    if not g_name: g_name = input(" Group Name > ")
+    if not g_name: color.fast_error("You must specify --group.")
+
+    if not groups.get_group(g_name): color.fast_error(f"Group '{g_name}' does not exist")
+    if not stage.are_you_sure():     color.fast_error("Deletion cancelled")
+
+    groups.rem_group(g_name)
+    print(color.green(f"Group '{g_name}' has been deleted"))
+    sys.exit()

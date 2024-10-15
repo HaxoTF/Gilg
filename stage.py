@@ -2,7 +2,7 @@ import config
 
 def are_you_sure(msg:str=None) -> bool:
     if msg: text = msg + " (y/n) "
-    else:   text = "Are you sure? (y/n)"
+    else:   text = "Are you sure? (y/n): "
 
     reply = input(text)
     if reply.lower() in ["yes", "y"]: return True

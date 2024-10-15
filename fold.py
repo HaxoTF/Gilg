@@ -1,6 +1,7 @@
 import os
 import platform
 import json
+import vhold
 
 def get_appdata():
     system = platform.system()
@@ -13,8 +14,14 @@ def get_appdata():
 ROOT_PATH    = os.path.normpath(os.path.join(get_appdata(), "Gilg"))
 
 def prepare():
+
     if not os.path.exists(ROOT_PATH):
         os.mkdir(ROOT_PATH)
+
+    for folder in vhold.BASE_FOLDERS:
+        full_path = get_path(folder)
+        if not os.path.exists(full_path):
+            os.mkdir(full_path)
 
 def get_path(sub_path:str) -> str:
     return os.path.normpath(os.path.join(ROOT_PATH, sub_path))
@@ -22,9 +29,11 @@ def get_path(sub_path:str) -> str:
 def get_items() -> list[dict]:
     json_path = get_path("items.json")
     if os.path.exists(json_path):
-        return json.load(open(json_path, "r"))
+        with open(json_path, "r") as f:
+            return json.load(f)
     return []
 
 def set_items(data:list[dict]) -> None:
     json_path = get_path("items.json")
-    json.dump(data, open(json_path, "w"))
+    with open(json_path, "w") as f:
+        json.dump(data, f, indent=4)
