@@ -37,3 +37,14 @@ def set_items(data:list[dict]) -> None:
     json_path = get_path("items.json")
     with open(json_path, "w") as f:
         json.dump(data, f, indent=4)
+
+def gen_free_path(prename="untitled", ext="", root=None):
+    if not root: root = os.getcwd()
+    full_path = os.path.join(root, f"{prename}{ext}")
+
+    i = 0
+    while os.path.exists(full_path):
+        full_path = os.path.join(root, f"{prename} {i}{ext}")
+        i += 1
+    
+    return full_path

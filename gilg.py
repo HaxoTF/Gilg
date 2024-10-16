@@ -28,9 +28,17 @@ if parse.update:
         data = fold.get_items()
         item = stage.find_item(name, data)
         if not item: color.fast_error(f"Item '{name}' does not exist")
+        stage.set_terminal_title(f"Updating {name}...")
 
         # Update
-        cmd = stage.get_item_cmd(item)
+        if parse.here:
+            root = fold.gen_free_path("gilg")
+            if parse.spread: folder = os.path.join(root, item["name"])
+            else:            folder = root
+            cmd = stage.get_item_cmd(item, folder)
+        else:
+            cmd = stage.get_item_cmd(item)
+        
         print(f"\n\nRunning : {color.blue(cmd)}\n")
         os.system(cmd)
     
@@ -40,8 +48,23 @@ if parse.update:
         grp   = groups.get_group(name)
         items = groups.get_group_items(grp)
 
+        total   = len(grp)
+        current = 0 
+
+        if parse.here: root = fold.gen_free_path("gilg")
         for i in items:
-            cmd = stage.get_item_cmd(i)
+
+            current += 1
+            percent  = int(current/total*100)
+            stage.set_terminal_title(f"{percent}% - {i['name']}")
+
+            if parse.here:
+                if parse.spread: folder = os.path.join(root, i["name"])
+                else:            folder = root
+                cmd = stage.get_item_cmd(i, folder)
+            else:
+                cmd = stage.get_item_cmd(i)
+
             print(f"\n\nItem    : {color.green(i['name'])}")
             print(    f"Running : {color.blue(cmd)}\n")
             os.system(cmd)

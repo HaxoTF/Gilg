@@ -1,4 +1,6 @@
 import config
+import os
+import sys
 
 def are_you_sure(msg:str=None) -> bool:
     if msg: text = msg + " (y/n) "
@@ -13,6 +15,15 @@ def find_item(name:str, data:list[dict]) -> dict:
         if item["name"] == name:
             return item
 
-def get_item_cmd(item:dict):
+def get_item_cmd(item:dict, folder=None):
     browser = config.quick_value("browser")
-    return f'gallery-dl --cookies-from-browser {browser} -D "{item["folder"]}" {item["link"]}'
+    if not folder: folder = item["folder"]
+    return f'gallery-dl --cookies-from-browser {browser} -D "{folder}" {item["link"]}'
+
+def set_terminal_title(title):
+    if os.name == "nt": # Windows
+        os.system(f"title {title}")
+
+    elif os.name == "unix": # Linux, MacOS
+        sys.stdout.write(f'\33]0;{title}\a')
+        sys.stdout.flush()
