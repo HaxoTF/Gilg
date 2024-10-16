@@ -36,8 +36,11 @@ if parse.update:
             if parse.spread: folder = os.path.join(root, item["name"])
             else:            folder = root
             cmd = stage.get_item_cmd(item, folder)
+
         else:
-            cmd = stage.get_item_cmd(item)
+            folder = item["folder"]
+            if folder == "default": folder = os.path.join(config.quick_value("default_root"), item["name"])
+            cmd = stage.get_item_cmd(item, folder)
         
         print(f"\n\nRunning : {color.blue(cmd)}\n")
         os.system(cmd)
@@ -49,7 +52,7 @@ if parse.update:
         items = groups.get_group_items(grp)
 
         total   = len(grp)
-        current = 0 
+        current = 0
 
         if parse.here: root = fold.gen_free_path("gilg")
         for i in items:
@@ -62,8 +65,11 @@ if parse.update:
                 if parse.spread: folder = os.path.join(root, i["name"])
                 else:            folder = root
                 cmd = stage.get_item_cmd(i, folder)
+
             else:
-                cmd = stage.get_item_cmd(i)
+                folder = i["folder"]
+                if folder == "default": folder = os.path.join(config.quick_value("default_root"), i["name"])
+                cmd = stage.get_item_cmd(i, folder)
 
             print(f"\n\nItem    : {color.green(i['name'])}")
             print(    f"Running : {color.blue(cmd)}\n")
@@ -142,7 +148,9 @@ if parse.list_items:
         table.add_column("Link",   style="cyan")
 
         for i in data:
-            table.add_row(i["name"], i["folder"], i["link"])
+            folder = i["folder"]
+            if folder == "default": folder = f"[magenta]default[/magenta]"
+            table.add_row(i["name"], folder, i["link"])
     
     rich.print(table)
     sys.exit()
@@ -232,7 +240,7 @@ if parse.list_config:
             table.add_row(c["name"], " ".join(values))
         
         else:
-            table.add_row(c["name"], c["value"])
+            table.add_row(c["name"], f"[yellow]{c['value']}")
 
     # Display
     rich.print(table)
