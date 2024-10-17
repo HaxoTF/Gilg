@@ -15,9 +15,9 @@ def get_group(name:str) -> list[str]:
     if not os.path.exists(path): return None
 
     with open(path, "r") as f:
-        group = json.load(f)
-        group.sort()
+        group :list[str] = json.load(f)
     
+    group.sort()
     return group
 
 def set_group(name:str, group:list[str]):
@@ -39,6 +39,7 @@ def get_group_items(grp:list[str]) -> list[dict]:
         if item["name"] in grp:
             result.append(item)
     
+    result.sort(key=lambda x: x["name"])
     return result
 
 def clean_group(grp:list[str]) -> list[dict]:

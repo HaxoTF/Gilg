@@ -33,3 +33,5 @@ Congratulations! Now you can run **Gilg** via your terminal
 
 ### Reminder
 Please keep in mind gilg is not supposed to be run by double clicking on it. It is required to run it via terminal otherwise absolutely nothing will happen.
+
+To view all available operations type `gilg --help` in the terminal

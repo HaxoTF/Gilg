@@ -7,6 +7,7 @@ import sys
 # Stagings
 import color
 import config
+import dirs
 import fold
 import groups
 import pars
@@ -39,7 +40,13 @@ if parse.update:
 
         else:
             folder = item["folder"]
-            if folder == "default": folder = os.path.join(config.quick_value("default_root"), item["name"])
+            if   folder == "default": folder = os.path.join(config.quick_value("default_root"), item["name"])
+            elif folder[0] == "#":
+                rp = dirs.find_path(folder, dirs.get_roots())
+                if not rp: color.fast_error(f"Item's --path were assigned to invalid root '{folder[1:]}'")
+                folder = rp
+
+            if parse.spread: folder = os.path.join(folder, item["name"])
             cmd = stage.get_item_cmd(item, folder)
         
         print(f"\n\nRunning : {color.blue(cmd)}\n")
@@ -68,7 +75,15 @@ if parse.update:
 
             else:
                 folder = i["folder"]
-                if folder == "default": folder = os.path.join(config.quick_value("default_root"), i["name"])
+                if   folder == "default": folder = os.path.join(config.quick_value("default_root"), i["name"])
+                elif folder[0] == "#":
+                    rp = dirs.find_path(folder, dirs.get_roots())
+                    if not rp: 
+                        print(color.yellow(f"Skipping '{i['name']}' due to invalid root '{folder[1:]}'"))
+                        continue
+                    folder = rp
+
+                if parse.spread: folder = os.path.join(folder, i["name"])
                 cmd = stage.get_item_cmd(i, folder)
 
             print(f"\n\nItem    : {color.green(i['name'])}")
@@ -139,7 +154,10 @@ if parse.list_items:
         table.add_column("Link",   style="cyan")
 
         for item in groups.get_group_items(grp):
-            table.add_row(item["name"], item["folder"], item["link"])
+            folder :str = item["folder"]
+            if folder == "default" or folder[0]=="#": 
+                folder = f"[magenta]{folder}[/magenta]"
+            table.add_row(item["name"], folder, item["link"])
 
     else:
         table = rich.table.Table(title="Items")
@@ -148,8 +166,9 @@ if parse.list_items:
         table.add_column("Link",   style="cyan")
 
         for i in data:
-            folder = i["folder"]
-            if folder == "default": folder = f"[magenta]default[/magenta]"
+            folder :str = i["folder"]
+            if folder == "default" or folder[0]=="#": 
+                folder = f"[magenta]{folder}[/magenta]"
             table.add_row(i["name"], folder, i["link"])
     
     rich.print(table)
@@ -194,7 +213,10 @@ if parse.edit_item:
     # Manual input
     if (not new_name and not new_folder and not new_link):
         print("Specify new values. Leave blank if you want the value to remain the same")
+
         new_name   = input(" Name   > ")
+        if stage.find_item(new_name, data): color.fast_error(f"Item '{new_name}' already exists")
+
         new_folder = input(" Folder > ")
         new_link   = input(" Link   > ")
 
@@ -364,4 +386,98 @@ if parse.clear_group:
 
     groups.rem_group(g_name)
     print(color.green(f"Group '{g_name}' has been deleted"))
+    sys.exit()
+
+
+
+# ----- [ R O O T S ] -----
+
+# --- Add Root
+if parse.new_root:
+    
+    # Name
+    name = stage.manual_check(" Root Name > ", "You must specify --name", parse.name)
+
+    roots = dirs.get_roots()
+    if dirs.find_root(name, roots): color.fast_error(f"Root '{name}' already exists")
+    path = stage.manual_check(" Root Path > ", "You must specify --value", parse.value)
+
+    # Add into root
+    roots.append({ "name":name, "path":path })
+    dirs.set_roots(roots)
+    print(color.green("Root has been created"))
+    sys.exit()
+
+
+# --- Rem Root
+if parse.rem_root:
+
+    # Name
+    name = stage.manual_check(" Root Name > ", "You must specify --name", parse.name)
+
+    roots = dirs.get_roots()
+    r     = dirs.find_root(name, roots)
+    if not r: color.fast_error(f"Root '{name}' does not exist")
+
+    if not stage.are_you_sure():
+        color.fast_error("Deletion cancelled")
+    
+    roots.remove(r)
+    dirs.set_roots(roots)
+    print(color.green("Root has been deleted"))
+    sys.exit()
+
+# --- Edit Root
+if parse.edit_root:
+    
+    # Get
+    name  = parse.edit_root
+    roots = dirs.get_roots()
+    r     = dirs.find_root(name, roots)
+    if not r: color.fast_error(f"Root '{name}' does not exists")
+
+    new_name = parse.name
+    new_path = parse.value
+
+    # Manual input
+    if (not new_name and not new_path):
+        print("Specify new values. Leave blank if you want a value to remain the same")
+
+        new_name = input(" Name > ")
+        if dirs.find_root(new_name): color.fast_error(f"Root '{new_name}' already exists")
+
+        new_path = input(" Path > ")
+        if (not new_name and not new_path):
+            color.fast_error("Nothing changed")
+    
+    # Change
+    if new_name: r["name"] = new_name
+    if new_path: r["path"] = new_path
+    dirs.set_roots(roots)
+
+    print(color.green("Root has been edited"))
+    sys.exit()
+
+
+
+# --- List Roots
+if parse.list_roots:
+    
+    # Get
+    roots = dirs.get_roots()
+    if len(roots) == 0: color.fast_error("Root list is empty")
+    items = fold.get_items()
+
+    # Table
+    table = rich.table.Table(title="Roots")
+    table.add_column("Name",   style="blue")
+    table.add_column("Path",   style="yellow")
+    table.add_column("Usages", style="cyan")
+
+    # Rows
+    for r in roots:
+        usages = stage.calc_root_usages(r["name"], items)
+        table.add_row(r["name"], r["path"], str(usages))
+    
+    rich.print(table)
     sys.exit()

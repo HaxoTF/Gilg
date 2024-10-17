@@ -9,7 +9,7 @@ def get_parse() -> argparse.ArgumentParser:
     parse_item.add_argument("-ui", "--update",          action="store_true", help="Begin to download missing files")
     parse_item.add_argument("-ni", "--new-item",        action="store_true", help="Create new item based on name link and folder")
     parse_item.add_argument("-di", "--del-item",        action="store_true", help="Delete specific item")
-    parse_item.add_argument("-ei", "--edit-item",                            help="Edit items --name --folder and --link")
+    parse_item.add_argument("-ei", "--edit-item",                            help="Edit items --name and/or --folder and/or --link")
     parse_item.add_argument("-li", "--list-items",      action="store_true", help="List all items. If --group used will list all items in a group")
     
     # --- Values
@@ -31,6 +31,13 @@ def get_parse() -> argparse.ArgumentParser:
     parse_groups.add_argument("-pi", "--put-item",      action="store_true", help="Add an item --name into a --group")
     parse_groups.add_argument("-ti", "--take-item",     action="store_true", help="Remove an item --name from a --group")
     parse_groups.add_argument("-cg", "--clear-group",   action="store_true", help="Delete whole --group")
+
+    # --- Roots
+    parse_roots = parse.add_argument_group("Roots")
+    parse_roots.add_argument("-nr", "--new-root",       action="store_true", help="Create new predefined root to update items into")
+    parse_roots.add_argument("-rr", "--rem-root",       action="store_true", help="Remove specific root from list")
+    parse_roots.add_argument("-er", "--edit-root",                           help="Edit roots --name and/or --value")
+    parse_roots.add_argument("-lr", "--list-roots",     action="store_true", help="List all created roots")
 
     # --- Other
     parse_other = parse.add_argument_group("Other")

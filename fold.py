@@ -30,7 +30,9 @@ def get_items() -> list[dict]:
     json_path = get_path("items.json")
     if os.path.exists(json_path):
         with open(json_path, "r") as f:
-            return json.load(f)
+            data :list[dict] = json.load(f)
+            data.sort(key=lambda x: x["name"])
+            return data
     return []
 
 def set_items(data:list[dict]) -> None:
